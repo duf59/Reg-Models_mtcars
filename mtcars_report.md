@@ -40,18 +40,11 @@ We see that, adding the information about transmission type, the decrease in RSS
 
 We now look in more details at the linear model involving the 3 predictors *wt*, *qsec* and *am* :
 
+```r
+sum <- summary(lm.fit2)
+```
 The coefficients for all three predictors are statistically significant. A residual analysis (see Fig. A3 of the appendix)  do not show any clear pattern. It might be necessary for a further analyis to reconsider some outliers such as the Chrysler Imprerial (high residual and leverage).
 The model suggests that, for a fixed weight (*wt*) and 1/4 mile time (*qsec*), gazoline Mileage increases in average by ~3 miles per gallon for cars with a manual transmission compared to cars with an automatic transmission. This result is shown below as a boxplot of *mpg* (regressed on *wt* and *qsec*) function of transmission type.
-
-
-```r
-library(ggplot2)
-ggplot(mtcars, aes(x = factor(am, labels = c("auto","manual")), y = resid(lm(mpg ~ wt + qsec, mtcars)), fill=as.factor(am) )) +
-  geom_boxplot() + theme_bw() + 
-  labs(title="Gazoline Mlieage vs. transmission type",
-       x = "Transmission",
-       y = "residual of mpg ~ wt + qsec") + guides(fill=FALSE)
-```
 
 ![](mtcars_report_files/figure-html/plots-1.png) 
 
