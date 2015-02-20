@@ -8,9 +8,8 @@
 # The aim of the following code is to select a model, i.e. a set of predictor related with the response (mpg)
 # To this purpose we best subset selection and 10-fold cross-validation to estimate test MSE.
 
-# Note that the mtcars contains two types of variables :
+# The mtcars contains the following variables :
 #
-# * design variables :  
 #   - AM (transmission type)
 #   - VS (Engine Shape : 1 = Straight, 0 = V)
 #   - DISP (Engine size, in cubic inches)
@@ -19,51 +18,41 @@
 #   - GEAR (number of transmission speed == number of forward gears)
 #   - CARB (number of carburetors)
 #   - WT (weight)
-#
-# * performance variables : 
 #   - HP (Gross horsepower)
 #   - QSEC (1/4 mile time in seconds)
 #   - MPG (Gasoline mileage in Miles per gallon)
 #
-# Here we consider mpg as the outcome, and the design variables as the potential predictors.
-# Thereby hp and qsec have been removed.
+# Here we consider mpg as the outcome, and all the other variables as potential predictors.
 
-# Load the data
+# Load the data ####
   data(mtcars)
-  str(mtcars)
-  mtcars <- mtcars[,-c(4,7)]
+  str(mtcars)  
   sum(!complete.cases(mtcars))  # check all observations are complete
   
 # BEST SUBSET SELECTION ####
 # Perform best subset selection and look at the adjusted R² as indicator of model performance
   library(leaps)
-  regfit.full <- regsubsets(mpg  ~ ., data = mtcars, force.in = 6)
+  regfit.full <- regsubsets(mpg  ~ ., data = mtcars, nvmax = 10)
   reg.summary <- summary(regfit.full)
-  
-  # least square fit with am variable only
-  am.fit <- lm(mpg ~ am, data = mtcars)
-  am.summary <- summary(am.fit)
+
   
   # Find optimal model based on adjusted R square (Cp and BIC give the same result)
-  opt <- which.max(c(am.summary$adj.r.squared, reg.summary$adjr2))
-  
-  par(mfrow = c(1,1))
-  plot(1:8,c(am.summary$adj.r.squared, reg.summary$adjr2), type = "b", xlab = "Number of predictors",
-       ylab = "Adjusted RSq")
-  points(opt,reg.summary$adjr2[opt-1], col = "red", cex = 2, pch = 20)
+  opt <- which.max(reg.summary$adjr2)
+
+  plot(1:10,reg.summary$adjr2, type = "b", xlab = "Number of predictors", ylab = "Adjusted RSq")
+  points(opt,reg.summary$adjr2[opt], col = "red", cex = 2, pch = 20)
   
   # get the coefficient estimates for the optimal model
-  coef(regfit.full,opt-1)
+  coef(regfit.full,opt)
   
 # BEST SUBSET SELECTION INC. "AM" WITH CROSS-VALIDATION ####
 # Use cross validation to find the best model
   
-  k <- 5       # number of folds
+  k <- 10       # number of folds
   set.seed(1)  # for reproducibility
   
   folds     <- sample(1:k, nrow(mtcars), replace = TRUE)
-  cv.errors <- matrix(NA, k, 8, dimnames = list(NULL, paste(1:8)))
-  
+  cv.errors <- matrix(NA, k, 9, dimnames = list(NULL, paste(2:10)))
   
   predict.regsubsets <- function(object, newdata, id, ...){
     formula <- as.formula(object$call[[2]])
@@ -73,59 +62,48 @@
     mat[,xvars]%*%coefi
   } 
   
-  
   for (j in 1:k){
-    # fit the 1 variable model
-    am.fit <- lm(mpg ~ am, data = mtcars[folds!=j,])
-    am.pred <- predict(am.fit, newdata = mtcars[folds==j,])
-    cv.errors[j,1] <- mean((mtcars$mpg[folds==j]-am.pred)^2)
-    
-    # fit 2 to 8 variables models
-    best.fit <- regsubsets(mpg ~ ., data = mtcars[folds!=j,], force.in = 6)
-    for (i in 2:8){
-      pred <- predict.regsubsets(best.fit, newdata = mtcars[folds==j,], id=i-1)
+    best.fit <- regsubsets(mpg ~ ., data = mtcars[folds!=j,], force.in = 8, nvmax = 10)
+    for (i in 1:9){
+      pred <- predict.regsubsets(best.fit, newdata = mtcars[folds==j,], id=i)
       cv.errors[j,i] <- mean((mtcars$mpg[folds==j]-pred)^2)
     }
   }
   
   # average accross folds and plot
-  mean.cv.errors <- apply(cv.errors,2,mean)
-  mean.cv.sd <- apply(cv.errors,2,sd)
-  par(mfrow = c(1,1))
-  plot(1:8,mean.cv.errors, type = "b", xlab = "Number of predictors",
-       ylab = "CV test MSE")
+  mean.cv.errors <- apply(cv.errors,2,mean, na.rm=TRUE)
   opt.cv <- which.min(mean.cv.errors)
-  points(opt.cv, mean.cv.errors[opt.cv], col = "red", cex = 2, pch = 20)
-  mean.cv.sd[opt.cv]
-  mean.cv.errors[opt.cv] + mean.cv.sd[opt.cv]
+
+  plot(2:10,mean.cv.errors, type = "b", xlab = "Number of predictors (including am)", ylab = "test MSE")
+  points(opt.cv+1, mean.cv.errors[opt.cv], col = "red", cex = 2, pch = 20)
+
   
-  # The above result also suggests than a model containing 4 variables,
-  # including am, is enough to describe the outcome.
+  # The above result suggests that a model containing 3 variables,
+  # including am,  should be enough to describe the outcome.
+
+  # REMARK : USING LOOCV WE CLEARLY SEE A MINIMAL TEST MSE FOR 3 PREDICTORS
   
-  # Note : the above code should be improved to see if the 4 optimal variables
-  # remain the same or if they change accross the different folds.
-  
-  # Finally perform best subset on the full dataset and get the coefficient for the 4-variable model
+  # Finally perform best subset on the full dataset and get the coefficient for the 3-variables model
   # (this is just for completeness since we did it previously)
   
-  regfit.final <- regsubsets(mpg ~ ., data = mtcars, force.in = 6)
-  summary(regfit.final)
+  regfit.final <- regsubsets(mpg ~ ., data = mtcars, force.in = 8)
   coef(regfit.final,3)
+  coef(regfit.final,1)
+
   
   # Conclusion : best predictors are : 
   #   - AM : the transmission type (0 for automatic, 1 for manual)
-  #   - CYL : the number of cylinders
-  #   - CARB : the number of carburetors
+  #   - QSEC (1/4 mile time in seconds)
   #   - WT : the weight (in lb/1000)
   
   
-  # BEST SUBSET SELECTION INC. ALL VARIABLES WITH CROSS-VALIDATION ####
-  # Same as above but we consider all variables in the dataset, and do not force "am" in.
+# BEST SUBSET SELECTION INC. ALL VARIABLES  ####
+# Same as above but we consider all variables in the dataset, and do not force "am" in.
   
   data(mtcars)
   library(leaps)
   
-  k <- 5       # number of folds
+  k <- 10       # number of folds
   set.seed(1)  # for reproducibility
   
   folds     <- sample(1:k, nrow(mtcars), replace = TRUE)
@@ -152,31 +130,19 @@
   
   # average accross folds and plot
   mean.cv.errors <- apply(cv.errors,2,mean)
-  mean.cv.sd <- apply(cv.errors,2,sd)
-  par(mfrow = c(1,1))
-  plot(1:10,mean.cv.errors, type = "b", xlab = "Number of predictors",
-       ylab = "CV test MSE")
   opt.cv <- which.min(mean.cv.errors)
+
+  plot(1:10,mean.cv.errors, type = "b", xlab = "Number of predictors", ylab = "CV test MSE")
+
   points(opt.cv, mean.cv.errors[opt.cv], col = "red", cex = 2, pch = 20)
-  mean.cv.sd[opt.cv]
-  mean.cv.errors[opt.cv] + mean.cv.sd[opt.cv]
-  
-  # The above result also suggests than a model containing 4 variables,
-  # including am, is enough to describe the outcome.
-  
-  # Note : the above code should be improved to see if the 4 optimal variables
-  # remain the same or if they change accross the different folds.
-  
-  # Finally perform best subset on the full dataset and get the coefficient for the 4-variable model
-  # (this is just for completeness since we did it previously)
-  
+
   regfit.final <- regsubsets(mpg ~ ., data = mtcars, nvmax = 10)
-  summary(regfit.final)
-  coef(regfit.final,2)
+  coef(regfit.final,3)
   
-  # Conclusion : best predictors are : 
-  #   - AM : the transmission type (0 for automatic, 1 for manual)
-  #   - CYL : the number of cylinders
-  #   - CARB : the number of carburetors
-  #   - WT : the weight (in lb/1000)
+  # Not forcing am variable in the model, best result is obtain with 2 predictors : cyl and wt.
+  # However the 3-predictor model, which presents the second lower test MSE, is the same as
+  # obtained previously (i.e. predictors wt, qsec and am)
+
+regfit.all <- regsubsets(mpg ~ ., data = mtcars)
+summary(regfit.all)
   
