@@ -2,7 +2,7 @@
 # Introduction
 
 The present analysis was performed in the framework of the "Regression Models" course project (Coursera).
-We discuss the impact of car transmission type on Gazoline Mileage, using data from "Motor Trend" magazine (March, April, June and July issues of 1974). The data contains ten physical characteristics of 1973-1974 automobiles and is available in R as the built-in dataset "mtcars". Details regarding the variables can be obtained within R by typing ```?mtcars```, see also the articles from [R.R. Hocking][1] and [H. V. Henderson][2]. A multivariate plot of the data is shown in Fig. 1 of the Appendix. We will specifically try to answer the two folowing questions :
+We discuss the impact of car transmission type on Gazoline Mileage, using data from "Motor Trend" magazine (March, April, June and July issues of 1974). The data contains ten physical characteristics of 1973-1974 automobiles and is available in R as the built-in dataset "mtcars". Details regarding the variables can be obtained within R by typing ```?mtcars```, see also the articles from [R.R. Hocking][1] and [H. V. Henderson][2]. A multivariate plot of the data is shown in Fig. A1 of the Appendix. We will specifically try to answer the two folowing questions :
 
 * “Is an automatic or manual transmission better for MPG”
 * "Quantify the MPG difference between automatic and manual transmissions"
@@ -40,10 +40,14 @@ We see that, adding the information about transmission type, the decrease in RSS
 
 We now look in more details at the linear model involving the 3 predictors *wt*, *qsec* and *am* :
 
-```r
-sum <- summary(lm.fit2)
 ```
-The coefficients for all three predictors are statistically significant. A residual analysis (see Fig. A3 of the appendix)  do not show any clear pattern. It might be necessary for a further analyis to reconsider some outliers such as the Chrysler Imprerial (high residual and leverage).
+##              Estimate Std. Error   t value     Pr(>|t|)
+## (Intercept)  9.617781  6.9595930  1.381946 1.779152e-01
+## wt          -3.916504  0.7112016 -5.506882 6.952711e-06
+## qsec         1.225886  0.2886696  4.246676 2.161737e-04
+## am           2.935837  1.4109045  2.080819 4.671551e-02
+```
+The coefficients for all three predictors are statistically significant. A residual analysis (see Fig. A3 of the appendix)  do not show any clear pattern. It might be necessary for a further analyis to reconsider some outliers such as the Chrysler Imperial (high residual and leverage).
 The model suggests that, for a fixed weight (*wt*) and 1/4 mile time (*qsec*), gazoline Mileage increases in average by ~3 miles per gallon for cars with a manual transmission compared to cars with an automatic transmission. This result is shown below as a boxplot of *mpg* (regressed on *wt* and *qsec*) function of transmission type.
 
 ![](mtcars_report_files/figure-html/plots-1.png) 
@@ -52,7 +56,8 @@ The model suggests that, for a fixed weight (*wt*) and 1/4 mile time (*qsec*), g
 
 # Conclusion
 
-
+The present analysis suggests that an automatic transmission is better as far as gazoline mileage is concerned.
+It decreases the fuel consumption by about 3 miles per gallon, which corresponds to approximatly 15% (the mean *mpg* for the present dataset is ~ 20). Nonetheless, it is to be noted that the uncertainty remains relatively important. The p-value for the regression coefficient related to *am* variable is just below 5%, and the corresponding confidence interval is ``0.0457303, 5.8259441``, which is about 0.2 to ~ 30% gazoline economy. A further study considering interaction terms and polynomials of certain predictors such as *wt* could be helpful to assess the robustess of this conclusion. I would also advise to redo the analysis using a larger dataset (and more recent cars!).
 
 \newpage
 
